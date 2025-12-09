@@ -43,8 +43,8 @@ $$H(mm) = \frac{z(mm) \cdot h(pixel)}{f(pixel)}$$
 </ul> 
 Moreover, students should compare the estimated real dimensions to the known ones (125 mm x 178 mm) during the first approach manoeuvre of the vehicle to the pattern, so to verify that accuracy becomes higher as the vehicle gets closer to the pattern. Students should also comment on why accuracy turns out worse during the second approach manoeuvre.ww
 
-<img src="img/chessboard_capture.png" width="30%" height="30%" alt="Chessboard Capture">
-<img src="img/chessboard_2d.png" width="30%" height="30%" alt="Chessboard 2D">
+<img src="img/chessboard_capture.png" width="30%" height="30%" alt="Chessboard Capture" align="center">
+<img src="img/chessboard_2d.png" width="30%" height="30%" alt="Chessboard 2D" align="center">
 
 ## 4) Possible improvements
 Optionally, students may modify their software system to implement one (or more) of the following improvements.
@@ -54,7 +54,7 @@ Optionally, students may modify their software system to implement one (or more)
 <li> Instead of just a single main disparity, compute a set of disparities associated with the different areas of the obstacle, so to then estimate the distance from the camera for each part of the obstacle. For example, the image may be divided into a few large vertical stripes (5 in the exemplar left picture below), assuming the vertical lines parallel to the obstacle to be parallel to the image plane of the stereo sensor, and then estimate for each stripe a main disparity value (as done previously). Accordingly, one may create a planar view of the obstacle computing the angle between the horizontal lines parallel to the obstacle and the image plane of the stereo sensor (see the exemplar right picture below).</li>
 
 
-<img src="img/stripes.png" width="30%" height="30%" alt="Stripes">
-<img src="img/planar_view.png" width="30%" height="30%" alt="Planar View">
+<img src="img/stripes.png" width="30%" height="30%" alt="Stripes" align="center">
+<img src="img/planar_view.png" width="30%" height="30%" alt="Planar View" align="center">
 
 <li>Develop a more robust approach to estimate the main disparity (disparities) in order to filter out outliers. For example, ambiguous disparity measurements may be detected and removed by analysing the function representing the dissimilarity (similarity) measure along the disparity range or by computing disparities only at sufficiently textured image points (e.g, as highlighted by the well-known Moravec interest operator).</li>
