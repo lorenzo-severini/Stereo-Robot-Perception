@@ -9,10 +9,8 @@ The input data consist of a pair of synchronized videos taken by a stereo camera
   <li>focale f = 567.2 pixel</li>
   <li>baseline b = 92.226 mm</li>
 </ul>
-In case of problems associated with reading the video files, students may try to install
-an Indeo CODEC, e.g. after downloading it from the following URL:
-http://downloadcenter.intel.com/Detail_Desc.aspx?strState=LIVE&ProductID=355&
-DwnldID=2846
+In case of problems associated with reading the video files, students may try to instal an Indeo CODEC, e.g. after downloading it from the following URL:
+http://downloadcenter.intel.com/Detail_Desc.aspx?strState=LIVE&ProductID=355&DwnldID=2846
 
 ## 3) Functional Specifications
 Sensing of 3D information related to the obstacles in front of the vehicle should rely on the stereo vision principle. Purposely, students should develop an area-based stereo matching algorithm capable of producing a dense disparity map for each pair of synchronized frames and based on the SAD (Sum of Absolute Differences) dissimilarity measure. For each pair of candidate corresponding points, the basic stereo matching algorithm consists in comparing the intensities belonging to two squared windows centred at the points.  uch a comparison involves computation of either a dissimilarity (e.g. SAD, SSD) or similarity (e.g. NCC, ZNCC) measure between the two windows. As the matching process is carried out on rectified images, once a reference image is chosen (e.g. the left view), the candidates associated with a given point need to be sought for along the same row in the other image (right view) only and, usually, within a certain disparity range which depends on the depth range one wishes to sense. Accordingly, given a point in the reference image, the corresponding one in the other image is selected as the candidate minimizing (maximizing) the chosen dissimilarity (similarity) measure between the windows. As such, the parameters of the basic stereo matching algorithm consist in the size of the window and the disparity range. In this project, students should choose the former properly, while the latter is fixed to the interval [0, 128]. 
@@ -41,7 +39,7 @@ $$H(mm) = \frac{z(mm) \cdot h(pixel)}{f(pixel)}$$
 </div>
   </li>
 </ul> 
-Moreover, students should compare the estimated real dimensions to the known ones (125 mm x 178 mm) during the first approach manoeuvre of the vehicle to the pattern, so to verify that accuracy becomes higher as the vehicle gets closer to the pattern. Students should also comment on why accuracy turns out worse during the second approach manoeuvre.ww
+Moreover, students should compare the estimated real dimensions to the known ones (125 mm x 178 mm) during the first approach manoeuvre of the vehicle to the pattern, so to verify that accuracy becomes higher as the vehicle gets closer to the pattern. Students should also comment on why accuracy turns out worse during the second approach manoeuvre.
 
 <img src="img/chessboard_capture.png" width="30%" height="30%" alt="Chessboard Capture">
 <img src="img/chessboard_2d.png" width="30%" height="30%" alt="Chessboard 2D">
