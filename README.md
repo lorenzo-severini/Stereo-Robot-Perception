@@ -55,6 +55,6 @@ Optionally, students may modify their software system to implement one (or more)
 
 
 <img src="img/stripes.png" width="30%" height="30%" alt="Stripes">
-<img src="img/planar_view.pngg" width="30%" height="30%" alt="Planar View">
+<img src="img/planar_view.png" width="30%" height="30%" alt="Planar View">
 
 <li>Develop a more robust approach to estimate the main disparity (disparities) in order to filter out outliers. For example, ambiguous disparity measurements may be detected and removed by analysing the function representing the dissimilarity (similarity) measure along the disparity range or by computing disparities only at sufficiently textured image points (e.g, as highlighted by the well-known Moravec interest operator).</li>
