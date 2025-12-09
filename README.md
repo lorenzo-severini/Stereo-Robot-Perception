@@ -35,6 +35,7 @@ The main task of the project requires the following steps:
   <br>
 $$W(mm) = \frac{z(mm) \cdot w(pixel)}{f(pixel)}$$
   <br>
+  <br>
 $$H(mm) = \frac{z(mm) \cdot h(pixel)}{f(pixel)}$$
 <br>
 </div>
