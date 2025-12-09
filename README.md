@@ -52,6 +52,7 @@ Optionally, students may modify their software system to implement one (or more)
   <li>Modify the matching algorithm so to deploy a smaller disparity range, such as e.g. [0+o, 64+o], with o being a suitable horizontal offset. This offset can be computed as that value allowing the main disparity, dmain, computed at the previous time instant to lie at the centre of the disparity range. Accordingly, as the vehicle gets closer to the obstacle, the horizontal offset increases, thus avoiding the main disparity to exceed the disparity range (and conversely, when the vehicle goes away from the obstacle).</li>
   
 <li> Instead of just a single main disparity, compute a set of disparities associated with the different areas of the obstacle, so to then estimate the distance from the camera for each part of the obstacle. For example, the image may be divided into a few large vertical stripes (5 in the exemplar left picture below), assuming the vertical lines parallel to the obstacle to be parallel to the image plane of the stereo sensor, and then estimate for each stripe a main disparity value (as done previously). Accordingly, one may create a planar view of the obstacle computing the angle between the horizontal lines parallel to the obstacle and the image plane of the stereo sensor (see the exemplar right picture below).</li>
+
 ![Stripes](img/stripes.png)
 ![Planar View](img/planar_view.png)
 
