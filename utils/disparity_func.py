@@ -37,7 +37,7 @@ def _calculate_ncc(roi_l, sum_sq_l, roi_r_shifted, window_size):
 def _calculate_zncc(roi_l_zm, sum_sq_l, roi_r_shifted, window_size):
         mean_r = cv2.boxFilter(roi_r_shifted, -1, (window_size, window_size), normalize=True)
         roi_r_zm = roi_r_shifted - mean_r
-        
+         
         num = cv2.boxFilter(roi_l_zm * roi_r_zm, -1, (window_size, window_size), normalize=False)
         sum_sq_r = cv2.boxFilter(roi_r_zm**2, -1, (window_size, window_size), normalize=False)
         den = np.sqrt(sum_sq_l * sum_sq_r)

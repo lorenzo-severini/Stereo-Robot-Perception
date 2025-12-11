@@ -11,8 +11,8 @@ class RobotNavigation:
     def __init__(self, metric='SAD', aggregation='mode', roi_size=80, window_size=9, vertical_stripes=4, moravec_threshold=2000):
         
         # camera parameters provided in the pdf
-        self.focal = 567.2        # pixel
-        self.baseline = 92.226     # mm
+        self.focal = 567.2          # pixel
+        self.baseline = 92.226      # mm
         
         # stereo algorithm parameters
         self.max_disp_value = 128
@@ -54,7 +54,13 @@ class RobotNavigation:
         ], dtype=np.float32)
 
     def preprocess_img(self, img):
-        return cv2.filter2D(img, -1, self.kernel_sharpening)
+        # conversion from BGR to gray
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # applying a sharpening filter to enhance corners/borders (it seems to work better)
+        preprocessed = cv2.filter2D(gray, -1, self.kernel_sharpening)
+    
+        return preprocessed
     
     def compute_disparity(self, img_left, img_right, roi_x, roi_y):
         # range goes from d_prev - 32 to d_prev + 32    ->  offset is where the dynamic range begins, so d_prev - 32
@@ -104,7 +110,7 @@ class RobotNavigation:
                 continue
 
             cost = disparity_function(self.metric, roi_l, roi_r_shifted, self.window_size, sum_sq_l, roi_l_zm)
-
+ 
             # cost_volume is, as initialized before, [roi_size, roi_size, disp_range], so for example [80, 80, 64] ->   we need to remove again the offset to "re-normalize" it between 0-63
             cost_volume[:, :, d_local] = cost
 
@@ -233,16 +239,25 @@ class RobotNavigation:
         return planar_points, angle
     
     def process_stripes(self, disparity_map):
+        # get the width of the disparity map, we don't care about height here
         _, w = disparity_map.shape
         
+        # calculate the pixel width for a single vertical stripe
         self.stripe_width = w // self.vertical_stripes
+        
         d_stripes = []
+        # create a blank map to draw the simplified view (planar view) later
         map_stripes = np.zeros_like(disparity_map)
         
+        # loop through each vertical stripe
         for i in range(self.vertical_stripes):
             col_start = i * self.stripe_width
+            
+            # calculate where the actual stripe ends
+            # for the last one, we just take  everything left until the edge to avoid rounding errors
             col_end = (i + 1) * self.stripe_width if i < self.vertical_stripes - 1 else w
             
+            # extract the slice of the disparity map corresponding to this stripe
             stripe_data = disparity_map[:, col_start:col_end]
             
             val = 0.0
@@ -250,7 +265,10 @@ class RobotNavigation:
                 # decided to use the classic mean to have smoother visualization of the stripes
                 val = np.mean(stripe_data)
             
+            # fill this whole vertical area in the visualization map with the average value
             map_stripes[:, col_start:col_end] = val
+            
+            # save the value to the list to be used for the collision checks
             d_stripes.append(val)
         
         return d_stripes, map_stripes
@@ -277,11 +295,10 @@ class RobotNavigation:
             fps = 1.0 / elapsed_time if elapsed_time > 0 else 0.0
             prev_time = curr_time
 
-            gray_l = self.preprocess_img(cv2.cvtColor(frame_l, cv2.COLOR_BGR2GRAY))
-            gray_r = self.preprocess_img(cv2.cvtColor(frame_r, cv2.COLOR_BGR2GRAY))
-            #gray_l = cv2.cvtColor(frame_l, cv2.COLOR_BGR2GRAY)
-            #gray_r = cv2.cvtColor(frame_r, cv2.COLOR_BGR2GRAY)
-
+            #left and right frames preprocessing
+            gray_l = self.preprocess_img(frame_l)
+            gray_r = self.preprocess_img(frame_r)
+            
             h, w = gray_l.shape
             self.center_x, self.center_y = w // 2, h // 2
             
@@ -323,7 +340,7 @@ class RobotNavigation:
             cv2.putText(frame_l, alarm_text, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
             cv2.putText(frame_l, f"fps: {int(fps)}", (w - 140, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
             cv2.putText(frame_l, f"{self.metric}-{self.aggregation}", (w - 160, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-            cv2.imshow('Robot Navigation left', frame_l)
+            cv2.imshow('Robot Navigation Capture (L)', frame_l)
             
         # disparity map
             cv2.namedWindow('Disparity Map', cv2.WINDOW_NORMAL)
@@ -334,11 +351,12 @@ class RobotNavigation:
         # stripes map
             cv2.namedWindow('Disparity Map Stripes', cv2.WINDOW_NORMAL)
             # for better visualization (bigger pixels)
-            stripes_map_norm = cv2.resize(stripes_map_norm, (stripes_map_norm.shape[1]*3, stripes_map_norm.shape[0 ]*3), interpolation=cv2.INTER_NEAREST)
+            cv2.resizeWindow('Disparity Map Stripes', 200, 200)
             cv2.imshow('Disparity Map Stripes', stripes_map_norm)
             
         # texture map
             cv2.namedWindow('Texture Map', cv2.WINDOW_NORMAL)
+            # initial fullfill with white pixels, then below whe use the mask to colour the red ones
             texture_map_coloured = np.full((texture_map.shape[1], texture_map.shape[0], 3), 255, dtype=np.uint8)
             texture_map_coloured[texture_map] = [0, 0, 255]
             cv2.resizeWindow('Texture Map', 200, 200)
@@ -350,6 +368,7 @@ class RobotNavigation:
         # planar view
             cv2.putText(planar_view, angle_text, (370, 580), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
             cv2.imshow('ROI Planar Map', planar_view)
+            
         cap_l.release()
         cap_r.release()
         cv2.destroyAllWindows()
@@ -360,7 +379,7 @@ if __name__ == "__main__":
     parser.add_argument("--metric", "-m", type=str, default="SSD",
                         choices=['SAD', 'SSD', 'NCC', 'ZNCC'],
                         help="Similarity metric")
-    
+
     parser.add_argument("--aggregation", "-a", type=str, default="mean",
                         choices=['mean', 'median', 'mode'],
                         help="Disparity aggregation method (default: mode)")
@@ -375,23 +394,22 @@ if __name__ == "__main__":
     parser.add_argument("--vertical-stripes", "-v", type=int, default=10,           
                         help="Number of vertical stripes")
     
-    parser.add_argument("--moravec-threshold", "-t", type=int, default=15000,           
+    parser.add_argument("--moravec-threshold", "-t", type=int, default=11000,           
                         help="Number of vertical stripes")
     
     parser.add_argument("video_left", nargs='?', default="video/robotL.avi",
                         help="path to left video")
+    
     parser.add_argument("video_right", nargs='?', default="video/robotR.avi",
                         help="Path to right video")
 
     args = parser.parse_args()
-    
     
     if (args.roi_size - (args.window_size // 2)) % args.vertical_stripes != 0:
         print("Error:\t (roi_size - window_size // 2) divided by vertical_stripes must have a discard of 0.")
         print(f"Here:\t ({args.roi_size} - ({args.window_size} // 2)) % {args.vertical_stripes} == 0\t{args.roi_size - (args.window_size // 2)} % {args.vertical_stripes} = {(args.roi_size - (args.window_size // 2)) % args.vertical_stripes}")
         print("Example: (80 - (9 // 2)) % 4 == 0\t76 % 4 == 0")
         sys.exit()
-
 
     print(f"Starting...\n")
     print(f"-------------------------------------")
@@ -401,6 +419,11 @@ if __name__ == "__main__":
     print(f"Window size: {args.window_size}x{args.window_size}")
     print(f"-------------------------------------\n")
     
+    bot = RobotNavigation(metric=args.metric, 
+                          aggregation=args.aggregation, 
+                          roi_size=args.roi_size, 
+                          window_size=args.window_size, 
+                          vertical_stripes=args.vertical_stripes, 
+                          moravec_threshold=args.moravec_threshold)
     
-    bot = RobotNavigation(metric=args.metric, aggregation=args.aggregation, roi_size=args.roi_size, window_size=args.window_size, vertical_stripes=args.vertical_stripes, moravec_threshold=args.moravec_threshold)
     bot.run(args.video_left, args.video_right)

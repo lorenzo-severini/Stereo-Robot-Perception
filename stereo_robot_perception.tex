@@ -1,0 +1,527 @@
+\documentclass[12pt,a4paper,twoside]{book}
+
+% --- Pacchetti essenziali ---
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\captionsetup{font=small}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{tabularx}
+\usepackage{longtable}
+\renewcommand{\arraystretch}{1.5}
+\geometry{a4paper, left=3cm, right=3cm, top=2.5cm, bottom=2.5cm}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[LO]{\nouppercase{\rightmark}}
+\fancyhead[RE]{\nouppercase{\leftmark}}
+\usepackage{listings}
+\lstset{
+    language=Python,
+    basicstyle=\footnotesize\ttfamily,
+    numbers=left,
+    numberstyle=\tiny,
+    frame=single,
+    showstringspaces=false
+}
+
+\author{Lorenzo Severini}
+\date{\today}
+\newcommand{\professor}{Luigi Di Stefano}
+\newcommand{\university}{Università di Bologna}
+\newcommand{\department}{Informatica - Scienza e Ingegneria - DISI}
+\newcommand{\course}{LM-32 - INGEGNERIA INFORMATICA}
+
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    {\LARGE \textbf{Università di Bologna}} \\
+    \vspace{0.5cm}
+    {\Large Dipartimento di Informatica - Scienze e Ingegneria} \\
+    
+    \vspace{3cm}
+    
+    {\Huge \textbf{Stereo Robot Perception}} \\
+    \vspace{0.5cm}
+    {\Large Computer Vision and Image Processing M}
+    
+    \vspace{4cm}
+    
+    \begin{flushleft} \large
+        Lorenzo Severini
+    \end{flushleft}
+    
+    
+\end{titlepage}
+
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\newpage
+
+\mainmatter
+
+\chapter{Project Details}
+
+\section{Objective}
+Given a video sequence taken by a stereo camera mounted on a moving vehicle, project's objective is to sense information concerning the space in front of the vehicle which may be deployed by the vehicle navigation system to automatically avoid obstacles.
+
+\section{Dataset}
+The input data consist of a pair of synchronized videos taken by a stereo camera (robotL.avi, robotR.avi), with one video concerning the left view (robotL.avi), the other the right view (robotR.avi). Moreover, the parameters required to estimate distances from stereo images are provided below:
+
+\begin{itemize}
+    \item focale $f = 567.2$ pixel
+    \item baseline $b = 92.226$ mm
+\end{itemize}
+
+In case of problems associated with reading the video files, students may try to install an Indeo CODEC, e.g. after downloading it from the following URL:\\
+\url{http://downloadcenter.intel.com/Detail_Desc.aspx?strState=LIVE&ProductID=355&DwnldID=2846}
+
+\section{Functional Specifications}
+Sensing of 3D information related to the obstacles in front of the vehicle should rely on the stereo vision principle. Purposely, students should develop an area-based stereo matching algorithm capable of producing a dense disparity map for each pair of synchronized frames and based on the SAD (Sum of Absolute Differences) dissimilarity measure. For each pair of candidate corresponding points, the basic stereo matching algorithm consists in comparing the intensities belonging to two squared windows centred at the points. Such a comparison involves computation of either a dissimilarity (e.g. SAD, SSD) or similarity (e.g. NCC, ZNCC) measure between the two windows. As the matching process is carried out on rectified images, once a reference image is chosen (e.g. the left view), the candidates associated with a given point need to be sought for along the same row in the other image (right view) only and, usually, within a certain disparity range which depends on the depth range one wishes to sense. Accordingly, given a point in the reference image, the corresponding one in the other image is selected as the candidate minimizing (maximizing) the chosen dissimilarity (similarity) measure between the windows. As such, the parameters of the basic stereo matching algorithm consist in the size of the window and the disparity range. In this project, students should choose the former properly, while the latter is fixed to the interval [0, 128].
+
+The main task of the project requires the following steps:
+
+\begin{itemize}
+    \item Computing the disparity map in a central area of the reference frame (e.g. a squared area of size 60x60, 80x80 o 100x100 pixels), so to sense distances in the portion of the environment which would be travelled by the vehicle should it keep a straight trajectory.
+    
+    \item Estimate a main disparity ($d_{main}$) for the frontal (wrt the camera) portion of the environment based on the disparity map of the central area of the reference frame computed in the previous step, e.g. by choosing the average disparity or the most frequent disparity within the map.
+    
+    \item Determine the distance ($z$, in mm) of the obstacle wrt to the moving vehicle based on the main disparities (in pixel) estimated from each pair of frames:
+    \[
+    z(mm) = \frac{b(mm) \cdot f(pixel)}{d_{main}(pixel)}
+    \]
+    
+    \item Generate a suitable output to convey to the user, in each pair of frame, the information related to the distance (converted in meters) from the camera to the obstacle. Moreover, an alarm should be generated whenever the distance turns out below 0.8 meters.
+    
+    \item Compute the real dimensions in mm ($W,H$) of the chessboard pattern present in the scene. Purposely, the OpenCV functions cvFindChessboardCorners and cvDrawChessboardCorners may be deployed to, respectively, find and display the pixel coordinates of the internal corners of the chessboard. Then, assuming the chessboard pattern to be parallel to the image plane of the stereo sensor, the real dimensions of the pattern can be obtained from their pixel dimensions ($w,h$) by the following formulas:
+    \[
+    W(mm) = \frac{z(mm) \cdot w(pixel)}{f(pixel)}
+    \]
+    \[
+    H(mm) = \frac{z(mm) \cdot h(pixel)}{f(pixel)}
+    \]
+\end{itemize}
+
+Moreover, students should compare the estimated real dimensions to the known ones (125 mm x 178 mm) during the first approach manoeuvre of the vehicle to the pattern, so to verify that accuracy becomes higher as the vehicle gets closer to the pattern. Students should also comment on why accuracy turns out worse during the second approach manoeuvre.
+
+\begin{center}
+    \begin{minipage}[b]{0.35\textwidth}
+       \includegraphics[width=\textwidth]{img/chessboard_capture.png}
+        \label{fig:chessboard-robot}
+    \end{minipage}
+    \hspace{0.1\textwidth}
+    \begin{minipage}[b]{0.35\textwidth}
+        \includegraphics[width=\textwidth]{img/chessboard_2d.png}
+        \label{fig:chessboard-2d}
+    \end{minipage}
+    \captionof{figure}{Respectively a chessboard capture from robot navifation and a 2D representation.}
+\end{center}
+
+\section{Possible improvements}
+    Optionally, students may modify their software system to implement one (or more) of the following improvements.
+    \begin{itemize}
+        \item Modify the matching algorithm so to deploy a smaller disparity range, such as e.g. $[0+o, 64+o]$, with $o$ being a suitable horizontal offset. This offset can be computed as that value allowing the main disparity, $d_{main}$, computed at the previous time instant to lie at the centre of the disparity range. Accordingly, as the vehicle gets closer to the obstacle, the horizontal offset increases, thus avoiding the main disparity to exceed the disparity range (and conversely, when the vehicle goes away from the obstacle).
+        
+        \item Instead of just a single main disparity, compute a set of disparities associated with the different areas of the obstacle, so to then estimate the distance from the camera for each part of the obstacle. For example, the image may be divided into a few large vertical stripes (5 in the exemplar left picture below), assuming the vertical lines parallel to the obstacle to be parallel to the image plane of the stereo sensor, and then estimate for each stripe a main disparity value (as done previously). Accordingly, one may create a planar view of the obstacle computing the angle between the horizontal lines parallel to the obstacle and the image plane of the stereo sensor (see the exemplar right picture below).
+    \end{itemize}
+    \begin{center}
+        \begin{minipage}[b]{0.35\textwidth}
+           \includegraphics[width=\textwidth]{img/stripes.png}
+            \label{fig:chessboard-robot}
+        \end{minipage}
+        \hspace{0.1\textwidth}
+        \begin{minipage}[b]{0.35\textwidth}
+            \includegraphics[width=\textwidth]{img/planar_view.png}
+            \label{fig:chessboard-2d}
+        \end{minipage}
+        \captionof{figure}{Stripes window and planar view representation}
+    \end{center}
+        
+    
+    \begin{itemize}
+        \item Develop a more robust approach to estimate the main disparity (disparities) in order to filter out outliers. For example, ambiguous disparity measurements may be detected and removed by analysing the function representing the dissimilarity (similarity) measure along the disparity range or by computing disparities only at sufficiently textured image points (e.g, as highlighted by the well-known Moravec interest operator).
+    \end{itemize}
+    
+
+
+
+\chapter{Code}
+In this chapter we will review the code and motivate the choices made during the development. All of the requests in chapter 1 are accomplished in this project.
+
+\section{Libraries}
+    The main libraries used in this project are \texttt{opencv-python} and \texttt{numpy}. Some minor libraries are imported for a better development, visualization and usage of the program, such as: \texttt{time}, \texttt{argparse}, \texttt{sys}.
+    
+    There are also self-made "libraries": files where i stored code to make the main one more "readable": 
+    \begin{itemize}
+        \item \texttt{utils.disparity\_func} to separate the implemented disparity functions;
+        \item \texttt{utils.disparity\_func} to separate the implemented disparity functions;
+        \item \texttt{utils.moravec\_func} for the logic of the improvement 3.
+    \end{itemize}
+    
+    \begin{figure}[h!]
+        \centering
+        \includegraphics[width=\textwidth]{img/libraries.png}
+        \caption{Libraries used in the project}
+        \label{fig:libraries}
+    \end{figure}
+   
+\section{Inside the Main function}      
+    The main function is used to get arguments from the user to personalize program's parameters. They are put as arguments instead being taken from a configuration file for an easier implementation and customizable user experience.
+    The eligible arguments are:
+    \begin{itemize}
+        \item \textbf{Metric}: (dis)similarity function used to compare pixels between stereo captures.\\
+        Choices: \textbf{SAD}, \textbf{SSD}, \textbf{NCC}, \textbf{ZNCC}.
+        \item \textbf{Aggregation}: method used to calculate the main disparity (d\_main).\\
+        Choices: \textbf{mean}, \textbf{median}, \textbf{mode}.
+        \item \textbf{ROI Size}: size (pixels) of the central area of the reference frame.
+        \item \textbf{Vertical Stripes}: number of vertical stripes desired for improvement 2.
+        \item \textbf{Moravec Threshold}: value for filtering flat textures on the frame for improvement 3.
+        \item \textbf{Video Left and Right}: path for left and right stereo videos (already rectified, as already said in the project specifics).
+    \end{itemize}
+
+    To avoid errors, due to internal integer divisions and calculation, there's a check to prevent overflows: (roi\_size - window\_size / 2) divided by vertical\_stripes must have a discard of 0. 
+    
+    After taking all the external parameters, the main program is then run.
+
+    \begin{figure}[h!]
+        \centering
+        \includegraphics[width=\textwidth]{img/main.png}
+        \caption{Passing of the parameters to the RobotNavigation and running with the videos.}
+        \label{fig:main}
+    \end{figure}
+
+\section{Run method}
+    The Run method consists on the endless cycle of RobotNavigation, composed by some tasks:
+    \begin{itemize}
+        \item \textbf{Capture} of the left and right frames from a \texttt{cv2.VideoCapture}.
+        \item \textbf{Preprocess} left and right frames.
+        \item Calculation of the frames parameters (e.g. x and y centers, Region of Interest (ROI) x and y starting coordinates etc.).
+        \item Computation of the \textbf{disparity map}, along with the chosen \textbf{main disparity} and a \textbf{texture map} used to mask flat textures.
+        \item Calculation of the \textbf{frontal distance} with the previously calculated \textbf{main disparity} value; focal lenght and baseline length are already given by the requirements.
+        \item Check the calculated distance and \textbf{alarm} the user if the frontal distance is $<$ 0.8 meters.
+        \item Calculating the \textbf{chessboard dimensions} if its corner are found by the opencv function \texttt{cv2.findChessboardCorners}.
+        \item \textbf{Process the stripes} given a disparity map, returning a main disparity each stripe.
+        \item Compute and draw the \textbf{angle} and the \textbf{planar view} given the previously calculated main disparities.
+        \item \textbf{Draw} all the required frames.
+    \end{itemize}
+
+    All the tasks will be explained individually in the following sections.
+
+\section{Image preprocessing}
+    Before proceeding with feature extraction, the frames must be preprocessed. This phase is crucial to standardize the data and optimize the input for the mathematical operations performed by the detection algorithm.
+
+    The preprocessing pipeline, implemented in the \texttt{preprocess\_img} method, consists of two main steps: \textbf{grayscale conversion} and \textbf{edge sharpening}.
+
+    \subsection{Grayscale Conversion}
+        The first operation converts the image from the BGR color space to grayscale. As we already know, this reduction is necessary because algorithms such as Stereo Pixel Matching and Moravec Detector rely on pixel intensity variations rather than chromatic variations. Working with a single-channel (grayscale) image significantly reduces computational complexity without losing data.
+
+        In the code, this conversion is performed using the function 
+        \begin{center}
+            \texttt{gray = cv2.cvtColor(img, cv2.COLOR\_BGR2GRAY)}
+        \end{center}
+
+    \subsection{Image Sharpening}
+        To improve the definition of edges and corners, a sharpening filter is applied to the grayscale image. This is achieved by convolving the image with a specific kernel designed to enhance high-frequency details (rapid changes in intensity).
+
+        The kernel used for this operation is defined as matrix $\mathbf{K}:$\\
+        \begin{center}
+            $\mathbf{K} =
+            \begin{bmatrix}
+                0 & -1 & 0 \\
+                -1 & 5 & -1 \\
+                0 & -1 & 0
+            \end{bmatrix}$
+        \end{center}
+        In the code, this convolution is performed using the function 
+        \begin{center}
+            \texttt{preprocessed = cv2.filter2D(gray, -1, self.kernel\_sharpening)}
+        \end{center}
+
+        Experimental results during the development phase highlighted a huge benefit by preprocessing images with sharpening. Applying this filter resulted in a much more linear distance estimation, significantly reducing fluctuations (noise) and improving overall stability. Furthermore, final tests confirmed that the Moravec detector also benefits from the enhanced edge contrast, performing slightly better.
+
+            \begin{figure}[h!]
+                \centering
+                \includegraphics[width=0.7\textwidth]{img/preprocess.png}
+                \caption{Declaration of the sharpening kernel and pre-processing function, executed on every frame pair}
+                \label{fig:preprocess}
+            \end{figure}
+\section{Disparity Computation}
+    To maintain code modularity and ensure the main execution pipeline remains readable, the core mathematical operations for stereo matching and feature extraction were encapsulated in two external Python modules: \texttt{disparity\_func.py} and \texttt{moravec\_func.py}
+
+    \subsection{Similarity and Dissimilarity Metrics}
+        This module implements the mathematical functions required to compare pixel windows between the left and right images. It is designed to be agnostic to the specific stereo algorithm, allowing the user to switch between different metrics dynamically via \texttt{disparity\_function}.
+
+        Instead of iterating through pixels using standard Python loops (which are computationally expensive), the functions utilize \texttt{cv2.boxFilter}. This OpenCV function uses hardware acceleration to calculate sums (and perform normalizations, if required) over sliding windows efficiently (whose size is specified in the arguments and passed through the call).
+
+        The module supports four distinct metrics, selectable via a string argument:
+        \begin{itemize}
+            \item \textbf{SAD (Sum of Absolute Differences)} and \textbf{SSD (Sum of Squared Differences)}: computationally cheap metrics based on intensity subtraction.
+            \item \textbf{NCC (Normalized Cross-Correlation)} and \textbf{ZNCC (Zero-Mean NCC)}: robust statistical metrics that handle lighting variations but are computationally demanding.
+        \end{itemize}
+
+        An optimization was introduced for the normalized metrics (NCC/ZNCC). The denominator in these correlation formulas requires the calculation of the local sum of squares for the left image block. Since the left ROI remains static while we search for matches across the disparity range, recalculating this value for every disparity shift would be a computational waste. The functions \texttt{precompute\_ncc} and \texttt{precompute\_zncc} calculate these invariant portions once before the disparity loop begins. This "one-shot" calculation reduces the computational load during the dense stereo matching phase.
+
+    \subsection{Texture Detection and Filtering}
+        Reliable stereo matching requires sufficient local texture; attempting to match flat, homogeneous regions (such as a uniform surface or a clear sky) results in noisy and incorrect disparity estimations. This module implements the \textbf{Moravec Interest Operator} to act as a confidence filter.
+
+        \textbf{Algorithm Logic}: The function \texttt{compute\_moravec} analyzes the local contrast of a given ROI to determine if a pixel is suitable for matching.
+
+        \begin{enumerate}
+            \item \textbf{Directional Shifts}: The algorithm compares a central window of 3x3 pixels against shifted versions of itself in all 8 cardinal and ordinal directions (up, down, left, right, and diagonals).
+            \item \textbf{SSD Calculation}: For each direction, it calculates the \textbf{Sum of Squared Differences (SSD)} to quantify the intensity change.
+            \item \textbf{Minimization}: The algorithm identifies the minimum SSD value among all 8 directions. If the minimum SSD is high, it indicates that the pixel is distinct in every direction (a corner or strong texture). If the minimum SSD is low, the pixel belongs to a flat region or a simple edge (where sliding along the edge produces no change).
+            \item \textbf{Mask Generation}: Finally, the function applies a threshold to these minimum values, returning a boolean mask. This mask is used in the main pipeline to invalidate (ignore) pixels where the texture is insufficient for reliable depth estimation.
+        \end{enumerate}
+        
+        \begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.6\textwidth]{img/texture_map.png}
+            \caption{Texture Map (Moravec filter) applied to the ROI (green empty square in the bigger window). Red pixels represent valid areas (above the minimum texture threshold), which are used for disparity calculation. White pixels indicate areas where texture is insufficient, hence they are ignored.}
+            \label{fig:preprocess}
+        \end{figure}
+
+    \subsection{Main Function}
+        The \texttt{compute\_disparity} function represents the core of the stereo matching pipeline. It goes beyond simple disparity estimation by integrating temporal coherence and confidence filtering to ensure a robust calculation of the obstacle's distance. The process is divided into three logical stages:
+        
+        \subsubsection{Dynamic Search Window}
+            Instead of scanning the entire disparity range for every frame, the algorithm exploits temporal coherence.
+            \begin{itemize}
+                \item \textbf{Dynamic Offset}: The search window is centered around the disparity value estimated in the previous frame ($d_{prev}$).
+
+                \item \textbf{Optimization}: The algorithm searches a reduced local range ($\pm$32 pixels) around the central value. This approach slightly reduces computational load and minimizes "jumps" caused by false positives in the background.
+            \end{itemize}
+
+            \begin{figure}[h!]
+                \centering
+                \includegraphics[width=\textwidth]{img/offset_calc.png}
+                \caption{Dynamic Offset calculation procedure. Utilized to center the new range on the previous main disparity.}
+                \label{fig:offset_calculations}
+            \end{figure}
+
+            The central phase involves building a 3D Cost Volume of dimensions $\mathbf{(H,W,D)}$, where $\mathbf{D}$ is the local disparity range.
+            \begin{itemize}
+                \item \textbf{Iterative Matching}: For each disparity step, the algorithm compares the Left ROI with the corresponding shifted Right ROI using the selected metric (SAD, SSD, NCC, or ZNCC). Pre-computed images are used here if normalized metrics are selected.
+                \item \textbf{Selection}: Once the volume is populated, a  strategy is applied along the depth axis. For every pixel (x,y), the algorithm selects the disparity index that minimizes (or maximizes) the cost.
+            \end{itemize}
+            \begin{figure}[h!]
+                \centering
+                \includegraphics[width=\textwidth]{img/best_indices.png}
+                \caption{Selection of the indices (disparity values) corresponding to the best match along the depth axis. \texttt{np.argmax} is used for similarity metrics (maximum), while \texttt{np.argmin} is used for dissimilarity metrics (minimum).}
+                \label{fig:offset_calculations}
+            \end{figure}
+        
+            \subsubsection{Post-Processing and Aggregation}
+                The raw disparity map contains noise and invalid border data. It undergoes a refinement process:
+               
+                \begin{itemize}
+                    \item \textbf{Border Cropping}: The edges of the disparity map (equal to half the window size) are removed, as convolution operations in these areas are invalid.
+                
+                    \item \textbf{Texture Masking}: The Moravec Mask is applied. Pixels belonging to textureless regions are filtered out.
+                
+                    \item \textbf{Aggregation ($d_{main}$}): The dense map is condensed into a single scalar value, $d_{main}$, which represents the principal disparity of the detected obstacle. This value is calculated using statistical aggregation (mean, median, or mode) exclusively on the disparity values of the pixels validated by the texture mask. If the mask rejects all pixels (e.g., in a completely flat scene), the system falls back to the previous known disparity ($d_{main}$) to maintain stability.
+                \end{itemize}
+
+             \begin{figure}[h!]
+                \centering
+                \includegraphics[width=0.7\textwidth]{img/disparity_map.png}
+                \caption{View of a Disparity Map example. In white  pixels with a low (aggregated) disparity value, black viceversa.}
+                \label{fig:preprocess}
+            \end{figure}
+
+            \section{Distance Calculation}
+                Once the principal disparity (\textit{d\_main}) is determined, the pipeline proceeds to the final metric estimation and safety assessment:
+
+                \begin{itemize} 
+                    \item \textbf{Metric Conversion:} The principal disparity is passed to the project-defined \texttt{calculate\_distance} method to obtain the depth Z in millimeters through the formula:
+    \[
+    z(mm) = \frac{b(mm) \cdot f(pixel)}{d_{main}(pixel)}
+    \]
+                    This value is immediately converted to meters to facilitate the threshold check. 
+                    \item \textbf{Collision Warning Logic:} The system compares the estimated distance against a safety threshold of 0.8m. 
+                    \begin{itemize} 
+                         \item If $Z < 0.8$, the system triggers an \textbf{ALARM} state, setting the visual feedback to red to alert the operator of an imminent collision. 
+                        \item Otherwise, the system remains in a \textbf{SAFE} state (green), indicating sufficient clearance. 
+                    \end{itemize} 
+                \end{itemize}
+
+                \begin{figure}[h!]
+                    \centering
+                    \includegraphics[width=\textwidth]{img/distance_alarm.png}
+                    \caption{Portion of the code regarding the calculation of the distance and the safety alarm.}
+                    \label{fig:distance_alarm}
+                \end{figure}
+
+                \begin{figure}[h!]
+                    \centering
+                    \includegraphics[width=0.7\textwidth]{img/alarm.png}
+                    \caption{Visualization of the alarm when the robot gets below a 0.8 meters distance to the obstacle.}
+                    \label{fig:alarm}
+                \end{figure}
+
+
+            \section{Chessboard Analysis}
+                The main goal of this function is to perform a consistency check (or "sanity check") on the estimated distance. By detecting a calibration board with known dimensions, we can verify if the input z\_distance is accurate.
+
+                The process follows three main steps:
+                \begin{enumerate}
+                    \item \textbf{Pattern Detection}: First, the function converts the image to grayscale and uses \texttt{cv2.findChessboardCorners} to locate the internal corners of the chessboard pattern (defined as a 6×8 grid).
+                    \item \textbf{Calculating Dimensions (Pixels)}: If the board is found, the code calculates its width and height in the image plane (in pixels). It uses \texttt{np.linalg.norm} to calculate the Euclidean distance between specific corners.
+                        \begin{itemize}
+                            \item \textbf{Width (\textit{wpix})}: The distance between the top-left corner (index 0) and the top-right corner.
+                            \item \textbf{Height (\textit{hpix})}: The distance between the top-left corner and the bottom-left corner.
+                            \[
+                            d = \sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}
+                            \]
+                        \end{itemize}
+                    \item \textbf{Real World Dimension Estimation}: According to the formula given by the requirements, the physical dimensions in millimeters are calculated by applying the pinhole camera model principle (similar triangles), which scales the measured pixel dimensions based on the estimated \textbf{distance Z} and the \textbf{focal length f}. 
+                \end{enumerate}
+
+                \begin{figure}[h!]
+                    \centering
+                    \includegraphics[width=\textwidth]{img/chessboard_calc_output_example.png}
+                    \caption{Verification Output. This output displays the estimated disparity and the comparison between the calculated target dimensions and its known real dimensions (target).}
+                    \label{fig:chessboard_calc_output_example}
+                \end{figure}
+
+
+            \section{Stripes Processing}
+                The \texttt{process\_stripes} function implements a vertical segmentation method on the input disparity map. Its primary purpose is to simplify the disparity data by dividing the map into a user-defined number of vertical columns.
+
+                Inside the processing loop, the algorithm extracts the disparity data for each specific vertical section and computes the \textbf{arithmetic mean} (\texttt{np.mean}) of the pixel values. This operation results in a single, representative disparity value for the entire vertical segment, which is stored in the \texttt{d\_stripes} list.
+                
+                This segmentation creates a new, smoothed depth map that serves as the foundation for constructing a \textbf{planar view} (top-down perspective) of the robot's forward scene, where the average disparity of each column is converted into a specific metric distance ($Z$). Finally, by comparing the calculated distances of different columns (e.g., the difference between the left and right sectors), the system can estimate the surface angle and the \textbf{obstacle orientation} relative to the robot.
+
+                \begin{figure}[h!]
+                    \centering
+                    \includegraphics[width=\textwidth]{img/process_stripes.png}
+                        \caption{Implementation of the \texttt{process\_stripes} function. This function segments the disparity map, returning two key outputs: \texttt{d\_stripes}, a list containing the mean disparity values used for planar reconstruction and obstacle orientation estimation, and \texttt{map\_stripes}, the corresponding smoothed map utilized for simplified visualization.}
+                        \label{fig:process_stripes}
+                \end{figure}
+                
+                \begin{figure}[h!]
+                    \centering
+                    \includegraphics[width=0.7\textwidth]{img/stripes_map.png}
+                        \caption{Visual Comparison of Disparity and Vertical Stripes Maps.}
+                        \label{fig:stripes_map}
+                \end{figure}
+
+            \section{Planar View Computation}
+                \subsection{Stripes Positions}
+                    The \texttt{compute\_planar\_view} function is responsible for transforming the disparity data from the image plane (pixels) into real-world coordinates (millimeters) and recreating a planar view of the scene.
+                    
+                    First, the function calculates the horizontal pixel coordinate ($u$) for the center of each stripe. After filtering out invalid disparity values, it applies the standard stereo vision triangulation formulas to reconstruct the scene:
+                    \begin{itemize}
+                        \item \textbf{Depth ($z_{world}$)}: calculated using the focal length and baseline.
+                        \item \textbf{Lateral Position ($x_{world}$}: calculated by back-projecting the pixel coordinate $u$ relative to the optical center.
+                    \end{itemize}
+                    
+                    The resulting $(X, Z)$ pairs form a set of 2D points representing a "top-down" map of the scene, which is finally used to compute the obstacle's orientation angle.
+
+                \subsection{Angle Calculation}
+                    The \texttt{calculate\_obstacle\_angle} function estimates the orientation of the observed surface relative to the camera's lateral axis.
+    
+                    The algorithm approximates the obstacle's surface as a linear segment connecting the two most extreme points available in the planar view: the first valid point ($P_{start}$) and the last valid point ($P_{end}$).
+                    
+                    The orientation angle $\theta$ is then computed using the function (\texttt{arctan2}) based on the positional differences along the Z (depth) and X (lateral) axes:
+                    
+                    \begin{equation}
+                        \theta = \arctan2(\Delta Z, \Delta X) = \arctan2(Z_{end} - Z_{start}, X_{end} - X_{start})
+                    \end{equation}
+                    
+                    Finally, the result is converted from radians to degrees. A positive or negative angle indicates whether the obstacle is tilted towards or away from the robot.
+
+                    \begin{figure}[h!]
+                        \centering
+                        \includegraphics[width=0.8\textwidth]{img/planar_map.png}
+                        \caption{Planar Map Visualization for Metric Validation and Orientation Estimation. The 2D reconstruction displays the conformity of the processed points to the obstacle's actual geometry. This alignment visually confirms the accuracy of the calculated angle $\theta$ and the correctness of the triangulation formulas used for depth estimation.}                        
+                        \label{fig:planar_map}
+                    \end{figure}
+
+            \section{Data Visualization and User Interface}
+
+                The final stage of the processing pipeline involves rendering the computed data into multiple windows (seen before as samples) to provide real-time feedback on the robot's perception. The visualization logic is divided into three main categories:
+                
+                \begin{itemize}
+                    \item \textbf{Augmented Camera View (Frame L)}: The primary window displays the raw left frame from the stereo camera. It is augmented using \texttt{cv2.rectangle} to visualize the Region of Interest (ROI) and \texttt{cv2.putText} to overlay data, including the estimated distance ($Z$), the current frames per second (FPS), and any active collision alarms.
+                    
+                    \item \textbf{Intermediate Processing Maps}: In order to help in debugging and analysis, the system visualizes the internal states of the algorithm:
+                    \begin{enumerate}
+                        \item \textbf{Disparity Map}: The raw normalized disparity map.
+                        \item \textbf{Stripes Map}: The vertically segmented map.
+                        \item \textbf{Texture Map}: A visualization of the texture analysis, where valid high-texture pixels are highlighted in red against a white background to verify the efficacy of the filtering mask.
+                    \end{enumerate}
+                
+                    \item \textbf{Planar View Reconstruction}: Finally, the computed top-down map is displayed (ROI Planar Map). The calculated obstacle orientation angle is overlaid directly onto this map, providing an immediate metric reference for the obstacle's position and rotation relative to the robot.
+                \end{itemize}
+                
+                Standard OpenCV window management (\texttt{cv2.namedWindow}, \texttt{cv2.resizeWindow}) is used to ensure the debug maps are scaled up for better visibility on the screen.
+
+                \begin{figure}[h!]
+                    \centering
+                    \includegraphics[width=\textwidth]{img/complessive_view.png}
+                    \caption{Complessive View of the program's output, chessboard's estimations (terminal output) excluded.}                        
+                    \label{fig:complessive_view}
+                \end{figure}
+        
+        \chapter{Conclusion and Discussion of Results}
+            Following an extensive testing phase conducted during the development of the program, it was possible to identify a parameter set that offers the ideal compromise between detection accuracy, robustness to noise, and computational efficiency.
+
+            The optimal configuration identified is as follows:
+            \begin{itemize}
+                \item \textbf{Matching Algorithm:} SSD (Sum of Squared Differences) with Mean aggregation
+                \item \textbf{ROI Size:} 104 pixels
+                \item \textbf{Window Size:} 9 ($9 \times 9$ kernel)
+                \item \textbf{Vertical Stripes:} 10
+                \item \textbf{Moravec Threshold:} 11000
+            \end{itemize}
+            
+            The following analysis details the motivations behind these choices.
+            
+            \section{Choice of Stereo Matching Algorithm}
+                Although metrics such as NCC (Normalized Cross Correlation) and ZNCC (Zero-mean NCC) are renowned for their robustness to illumination variations, they proved to be computationally expensive without providing significant benefits in this specific context. Since the system operates in real-time stereo mode, capturing the scene simultaneously from both lenses, the lighting conditions are virtually identical across the views. Consequently, the \textbf{SSD} is been chosen, because it offers a slightly better balance between speed and accuracy, heavily penalizing large correspondence errors, which is consistent with the goal of having a robust system, especially in the proximity of an obstacle.
+            
+            \section{ROI and Window Sizing}
+                The \textbf{ROI size of 104} was calibrated to monitor a central yet sufficiently extensive area. This dimensioning is crucial during the approach phase to an obstacle: a too small ROI risks being saturated by flat (textureless) zones when the object is very close. The chosen size ensures the presence of sufficient features to accurately detect distances below the critical alarm threshold ($< 0.8$ meters).
+                
+                In parallel, the \textbf{Window Size of $9 \times 9$} represents the ideal equilibrium point:
+                \begin{itemize}
+                    \item A smaller window would be too sensitive to noise, generating false matches.
+                    \item A larger window would excessively reduce the specificity of the matching, over-smoothing the information.
+                \end{itemize}
+            
+            \section{Geometric Constraints and Planar View}
+                The value for the subdivision of the scene into \textbf{Vertical Stripes} was set to \textbf{10}. Compared to a coarser subdivision (4-5 stripes), this value entails a slight increase in computational load but offers superior resolution in the \textit{Planar View}, allowing for a much better morphological understanding of the obstacle.
+                
+                Furthermore, the combination of geometric parameters strictly respects the integer condition:
+                \begin{center}
+                    \texttt{(\texttt{roi\_size} - (\texttt{window\_size} // 2)) \% \texttt{vertical\_stripes} == 0}
+                \end{center}
+                This constraint ensures that the subdivision of calculation areas occurs without remainders, avoiding artifacts or rounding errors at the stripe boundaries.
+            
+            \section{Feature Extraction Robustness (Moravec)}
+                The Moravec operator threshold was experimentally fixed at \textbf{11000}. Tests highlighted that higher thresholds tended to select almost exclusively pixels belonging to the calibration chessboard (characterized by sharp edges). A threshold of 11000 allows the mask to include pixels belonging to the background or other objects as well. This makes the system significantly more robust, avoiding overfitting on high-contrast features and functioning correctly even when the robot looks outside the chessboard area.
+            
+            \section{Performance Evaluation}
+                The system demonstrates good overall accuracy, with slight fluctuations in distance measurement that fall within expected tolerances. The behavior is optimal at short distances, while a slight degradation of precision is observed at long ranges.
+                
+                Due to the intensive calculations, the operational frame rate settles between \textbf{5 and 8 fps} (compared to the original 15 fps of the video). However, an interesting behavior was observed: in close proximity to an obstacle, the system recovers fluidity, reaching maximum fps and ensuring maximum reactivity precisely during the moments of a potential collision.
+
+            \subsection{Impact of Image Pre-processing (Sharpening)}
+                Experimental results highlighted the critical role of image sharpening in the processing pipeline. Tests conducted without this pre-processing step gave significantly less accurate depth estimations.
+                
+                The application of a sharpening kernel proved to be essential for stabilizing the measurements: by enhancing the edge details within the image, the (dis)similarity algorithms can identify correspondence points with greater certainty. This results in a reduction of measurement variance and a more consistent distance output over time.
+\end{document}  
